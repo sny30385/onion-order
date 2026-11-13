@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>三星蔥團購表</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", sans-serif; background-color: #f3f7f4; }
+  </style>
+</head>
+<body class="text-gray-800 pb-12">
+  <div class="max-w-2xl mx-auto px-4 pt-6">
+    <!-- 標題與狀態列 -->
+    <div class="bg-white rounded-2xl shadow-sm border border-emerald-100 p-5 mb-5">
+      <div class="flex items-center justify-between flex-wrap gap-2 mb-2">
+        <h1 class="text-2xl font-bold text-emerald-800 flex items-center gap-2">
+          <span>🌱</span> 三星蔥團購表
+        </h1>
+        <span id="syncStatus" class="text-xs px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 font-medium">
+          ⏳ 連線同步中...
+        </span>
+      </div>
+      <div class="text-sm text-gray-600 space-y-1 bg-emerald-50/70 p-3.5 rounded-xl border border-emerald-100 mt-3">
+        <p><span class="font-semibold text-emerald-900">團購單價：</span>一把1KG NTD 170(不含運)</p>
+        <p><span class="font-semibold text-emerald-900">預計到貨時間：</span>11/17～11/19</p>
+        <p><span class="font-semibold text-emerald-900">主購備註：</span>主購沒有種蔥，純代訂沒有賺錢</p>
+      </div>
+    </div>
+
+    <!-- 統計儀表板 -->
+    <div class="grid grid-cols-3 gap-3 mb-5">
+      <div class="bg-white p-3.5 rounded-xl shadow-sm border border-gray-100 text-center">
+        <div class="text-xs text-gray-500 mb-1">目前總把數</div>
+        <div class="text-2xl font-bold text-emerald-600"><span id="totalQty">0</span> <span class="text-xs font-normal text-gray-500">把</span></div>
+      </div>
+      <div class="bg-white p-3.5 rounded-xl shadow-sm border border-gray-100 text-center">
+        <div class="text-xs text-gray-500 mb-1">登記人數</div>
+        <div class="text-2xl font-bold text-gray-800"><span id="totalPeople">0</span> <span class="text-xs font-normal text-gray-500">人</span></div>
+      </div>
+      <div class="bg-white p-3.5 rounded-xl shadow-sm border border-gray-100 text-center">
+        <div class="text-xs text-gray-500 mb-1">預估總金額</div>
+        <div class="text-xl font-bold text-amber-600 mt-0.5">$<span id="totalAmount">0</span></div>
+      </div>
+    </div>
+
+    <!-- 新增登記表單 -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 mb-5">
+      <h2 class="text-base font-bold text-gray-800 mb-3">📝 我要登記</h2>
+      <form id="orderForm" class="space-y-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">姓名 *</label>
+            <input type="text" id="inputName" required placeholder="請輸入姓名" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">公司分機 *</label>
+            <input type="text" id="inputExt" required placeholder="例如：1234" class="w-full px-3.5 py-2.5 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">數量（把）*</label>
+          <div class="flex items-center gap-3">
+            <button type="button" onclick="adjustInputQty(-1)" class="w-11 h-11 rounded-xl bg-gray-100 hover:bg-gray-200 text-lg font-bold text-gray-700 flex items-center justify-center">−</button>
+            <input type="number" id="inputQty" value="1" min="1" required class="w-24 text-center py-2.5 rounded-xl border border-gray-200 font-bold text-base focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <button type="button" onclick="adjustInputQty(1)" class="w-11 h-11 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-lg font-bold text-emerald-700 flex items-center justify-center">+</button>
+            <span class="text-xs text-gray-500 ml-1">小計：$<span id="previewSubtotal">170</span></span>
+          </div>
+        </div>
+        <button type="submit" id="submitBtn" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow-sm transition text-sm">
+          確認送出登記
+        </button>
+      </form>
+    </div>
+
+    <!-- 已登記名單 -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+      <div class="flex items-center justify-between flex-wrap gap-2 mb-3">
+        <h2 class="text-base font-bold text-gray-800">📋 已登記名單</h2>
+        <div class="flex gap-2">
+          <button onclick="copyListText()" class="text-xs px-3 py-1.5 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium">複製接龍</button>
+          <button onclick="exportCSV()" class="text-xs px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-medium">匯出Excel</button>
+        </div>
+      </div>
+      <input type="text" id="searchInput" oninput="renderOrders()" placeholder="🔍 搜尋姓名或分機..." class="w-full px-3.5 py-2 mb-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+      <div id="orderList" class="divide-y divide-gray-100">
+        <div class="py-8 text-center text-sm text-gray-400">載入資料中...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz25d9UFndWzZFJRDGBeL-mGPFzxlzg4u1Vb0D78ulbQX8rlEGTPDCCy014w3L18lkqmQ/exec";
+
+    const UNIT_PRICE = 170;
+    let orders = [];
+
+    function setSyncStatus(text, type) {
+      const el = document.getElementById("syncStatus");
+      el.textContent = text;
+      el.className = "text-xs px-2.5 py-1 rounded-full font-medium " + (
+        type === "ok" ? "bg-emerald-100 text-emerald-800" :
+        type === "err" ? "bg-red-100 text-red-800" : "bg-amber-100 text-amber-800"
+      );
+    }
+
+    function adjustInputQty(delta) {
+      const input = document.getElementById("inputQty");
+      const next = Math.max(1, (parseInt(input.value) || 1) + delta);
+      input.value = next;
+      document.getElementById("previewSubtotal").textContent = next * UNIT_PRICE;
+    }
+
+    document.getElementById("inputQty").addEventListener("input", () => adjustInputQty(0));
+
+    async function fetchOrders() {
+      if (!GOOGLE_SCRIPT_URL) {
+        orders = JSON.parse(localStorage.getItem("scallion_orders") || "[]");
+        setSyncStatus("⚠️ 尚未綁定試算表（單機模式）", "warn");
+        renderOrders();
+        return;
+      }
+      try {
+        const res = await fetch(GOOGLE_SCRIPT_URL);
+        const json = await res.json();
+        if (json.status === "success") {
+          orders = json.data || [];
+          setSyncStatus("🟢 已連線Google試算表同步", "ok");
+          renderOrders();
+        }
+      } catch (err) {
+        setSyncStatus("🔴 試算表連線失敗", "err");
+      }
+    }
+
+    async function syncAction(payload) {
+      if (!GOOGLE_SCRIPT_URL) {
+        localStorage.setItem("scallion_orders", JSON.stringify(orders));
+        renderOrders();
+        return;
+      }
+      setSyncStatus("⏳ 儲存同步中...", "warn");
+      try {
+        await fetch(GOOGLE_SCRIPT_URL, {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+        await fetchOrders();
+      } catch (err) {
+        setSyncStatus("🔴 同步失敗，請重試", "err");
+      }
+    }
+
+    document.getElementById("orderForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("inputName").value.trim();
+      const ext = document.getElementById("inputExt").value.trim();
+      const qty = Math.max(1, parseInt(document.getElementById("inputQty").value) || 1);
+      if (!name || !ext) return;
+
+      const btn = document.getElementById("submitBtn");
+      btn.disabled = true;
+      btn.textContent = "送出中...";
+
+      const newOrder = { id: String(Date.now()), name, ext, qty, createdAt: Date.now() };
+      orders.push(newOrder);
+      renderOrders();
+      await syncAction({ action: "add", ...newOrder });
+
+      document.getElementById("inputName").value = "";
+      document.getElementById("inputExt").value = "";
+      document.getElementById("inputQty").value = "1";
+      document.getElementById("previewSubtotal").textContent = UNIT_PRICE;
+      btn.disabled = false;
+      btn.textContent = "確認送出登記";
+    });
+
+    async function updateItemQty(id, delta) {
+      const item = orders.find(o => o.id === id);
+      if (!item) return;
+      const nextQty = item.qty + delta;
+      if (nextQty <= 0) return deleteItem(id);
+      item.qty = nextQty;
+      renderOrders();
+      await syncAction({ action: "update", id, qty: nextQty });
+    }
+
+    async function deleteItem(id) {
+      if (!confirm("確定要取消這筆登記嗎？")) return;
+      orders = orders.filter(o => o.id !== id);
+      renderOrders();
+      await syncAction({ action: "delete", id });
+    }
+
+    function renderOrders() {
+      const keyword = document.getElementById("searchInput").value.trim().toLowerCase();
+      const totalQty = orders.reduce((sum, o) => sum + Number(o.qty), 0);
+      document.getElementById("totalQty").textContent = totalQty;
+      document.getElementById("totalPeople").textContent = orders.length;
+      document.getElementById("totalAmount").textContent = (totalQty * UNIT_PRICE).toLocaleString();
+
+      const filtered = orders.filter(o =>
+        o.name.toLowerCase().includes(keyword) || String(o.ext).toLowerCase().includes(keyword)
+      );
+
+      const listEl = document.getElementById("orderList");
+      if (filtered.length === 0) {
+        listEl.innerHTML = `<div class="py-8 text-center text-sm text-gray-400">目前尚無符合的登記紀錄</div>`;
+        return;
+      }
+
+      listEl.innerHTML = filtered.map((o, idx) => `
+        <div class="py-3 flex items-center justify-between gap-2">
+          <div>
+            <div class="font-bold text-gray-800 text-sm">${idx + 1}. ${escapeHtml(o.name)} <span class="text-xs font-normal text-gray-500 bg-gray-100 px-2 py-0.5 rounded ml-1">分機 ${escapeHtml(o.ext)}</span></div>
+            <div class="text-xs text-emerald-700 mt-0.5 font-medium">${o.qty} 把 ・ $${(o.qty * UNIT_PRICE).toLocaleString()}</div>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button onclick="updateItemQty('${o.id}', -1)" class="w-8 h-8 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm">−</button>
+            <span class="w-6 text-center text-sm font-bold">${o.qty}</span>
+            <button onclick="updateItemQty('${o.id}', 1)" class="w-8 h-8 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-bold text-sm">+</button>
+            <button onclick="deleteItem('${o.id}')" class="ml-1 text-xs text-red-400 hover:text-red-600 px-2 py-1">刪除</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, m => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[m]));
+    }
+
+    function copyListText() {
+      if (!orders.length) return alert("目前還沒有登記資料喔！");
+      const totalQty = orders.reduce((s, o) => s + Number(o.qty), 0);
+      const lines = orders.map((o, i) => `${i + 1}. ${o.name} (分機${o.ext}) - ${o.qty}把 ($${o.qty * UNIT_PRICE})`);
+      const text = `【三星蔥團購表】\n單價：一把1KG NTD 170(不含運)\n預計到貨：11/17～11/19\n--------------------\n${lines.join("\n")}\n--------------------\n總計：${orders.length}人 / 共${totalQty}把 / $${(totalQty * UNIT_PRICE).toLocaleString()}`;
+      navigator.clipboard.writeText(text).then(() => alert("已複製接龍清單，可直接貼到群組！"));
+    }
+
+    function exportCSV() {
+      if (!orders.length) return alert("目前還沒有登記資料可匯出！");
+      const header = ["序號", "姓名", "公司分機", "數量(把)", "應付金額(不含運)", "發貨確認"];
+      const rows = orders.map((o, i) => [i + 1, `"${o.name}"`, `"${o.ext}"`, o.qty, o.qty * UNIT_PRICE, ""]);
+      const csv = "\uFEFF" + [header, ...rows].map(r => r.join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = `三星蔥團購表_${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+    }
+
+    fetchOrders();
+  </script>
+</body>
+</html>
